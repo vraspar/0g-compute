@@ -11,7 +11,8 @@ dotenv.config();
 // Official 0G providers
 const OFFICIAL_PROVIDERS = {
   "llama-3.3-70b-instruct": "0xf07240Efa67755B5311bc75784a061eDB47165Dd",
-  "deepseek-r1-70b": "0x3feE5a4dd5FDb8a32dDA97Bed899830605dBD9D3"
+  "deepseek-r1-70b": "0x3feE5a4dd5FDb8a32dDA97Bed899830605dBD9D3",
+  "qwen2.5-vl-72b-instruct": "0x6D233D2610c32f630ED53E8a7Cbf759568041f8f"
 };
 
 // Test configuration
@@ -78,6 +79,12 @@ async function testComputeFlow() {
     const services = await broker.inference.listService();
     console.log(`✅ Found ${services.length} available services`);
     
+    if (services.length === 0) {
+      console.log("⚠️  No services available. The network may be down or contract addresses may have changed.");
+      console.log("❌ Cannot proceed without available services.");
+      process.exit(1);
+    }
+
     services.forEach((service: any, index: number) => {
       const modelName = Object.entries(OFFICIAL_PROVIDERS).find(([_, addr]) => addr === service.provider)?.[0] || 'Unknown';
       console.log(`\n🤖 Service ${index + 1}:`);
@@ -91,14 +98,15 @@ async function testComputeFlow() {
     });
 
     // Step 5: Select provider and acknowledge
-    // Note: This step is only required for the first time you use a provider. No need to run it again.
     console.log("\n📋 Step 5: Select Provider and Acknowledge");
     console.log("-".repeat(30));
-    
-    // Use the first official provider (llama-3.3-70b-instruct)
-    const selectedProvider = OFFICIAL_PROVIDERS["llama-3.3-70b-instruct"];
-    console.log(`🎯 Selected Provider: ${selectedProvider} (llama-3.3-70b-instruct)`);
-    
+
+    // Use the first available service from the list instead of hardcoded addresses
+    const selectedProvider = services[0].provider;
+    const selectedService = services[0];
+    console.log(`🎯 Selected Provider: ${selectedProvider}`);
+    console.log(`🎯 Service URL: ${selectedService.url}`);
+
     console.log("⏳ Acknowledging provider...");
     try {
       await broker.inference.acknowledgeProviderSigner(selectedProvider);
@@ -197,17 +205,18 @@ async function testComputeFlow() {
     console.log("-".repeat(30));
     
     const finalBalance = await broker.ledger.getLedger();
-    console.log(finalBalance);
+    console.log("ledgerinfo", finalBalance);
+
     
     // Calculate approximate cost
     // ledgerInfo structure: { ledgerInfo: [balance, ...], infers: [...], fines: [...] }
-    const initialBalanceNum = parseFloat(ethers.formatEther(ledgerInfo.ledgerInfo[0]));
-    const finalBalanceNum = parseFloat(ethers.formatEther(finalBalance.ledgerInfo[0]));
-    const cost = initialBalanceNum - finalBalanceNum;
+    // const initialBalanceNum = parseFloat(ethers.formatEther(ledgerInfo.ledgerInfo[0]));
+    // const finalBalanceNum = parseFloat(ethers.formatEther(finalBalance.ledgerInfo[0]));
+    // const cost = initialBalanceNum - finalBalanceNum;
     
-    if (cost > 0) {
-      console.log(`💸 Approximate Query Cost: ${cost.toFixed(6)} OG`);
-    }
+    // if (cost > 0) {
+    //   console.log(`💸 Approximate Query Cost: ${cost.toFixed(6)} OG`);
+    // }
 
     // Step 11: Summary
     console.log("\n📋 Step 11: Demo Summary");

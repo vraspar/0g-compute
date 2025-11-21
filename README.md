@@ -22,6 +22,7 @@ The starter kit includes pre-configured access to official 0G AI services:
 |-------|-----------------|-------------|-------------|
 | **llama-3.3-70b-instruct** | `0xf07240Efa67755B5311bc75784a061eDB47165Dd` | State-of-the-art 70B parameter model for general AI tasks | TEE (TeeML) |
 | **deepseek-r1-70b** | `0x3feE5a4dd5FDb8a32dDA97Bed899830605dBD9D3` | Advanced reasoning model optimized for complex problem solving | TEE (TeeML) |
+| **qwen2.5-vl-72b-instruct** | `0x6D233D2610c32f630ED53E8a7Cbf759568041f8f` | Vision-language model supporting both text and image inputs (72B parameters) | TEE (TeeML) |
 
 ## 📁 Repository Structure
 
@@ -406,12 +407,12 @@ const isValid = await broker.inference.processResponse(
 ## 📦 Dependencies
 
 ### Core Dependencies
-- `@0glabs/0g-serving-broker` - 0G Compute Network SDK
-- `ethers` - Ethereum wallet and provider functionality
-- `openai` - OpenAI-compatible API client
-- `express` - Web framework for REST API
-- `dotenv` - Environment variable management
-- `crypto-js` - Cryptographic utilities
+- `@0glabs/0g-serving-broker@0.5.4` - 0G Compute Network SDK (latest stable version)
+- `ethers@^6.11.1` - Ethereum wallet and provider functionality
+- `openai@^4.28.0` - OpenAI-compatible API client
+- `express@^4.18.2` - Web framework for REST API
+- `dotenv@^16.4.5` - Environment variable management
+- `crypto-js@^4.2.0` - Cryptographic utilities
 
 ### Development Dependencies
 - `typescript` - TypeScript compiler

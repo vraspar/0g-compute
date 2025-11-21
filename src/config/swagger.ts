@@ -6,7 +6,7 @@ const options: swaggerJsdoc.Options = {
     info: {
       title: '0G Compute Network API',
       version: '1.0.0',
-      description: 'REST API for interacting with the 0G Compute Network',
+      description: 'REST API for interacting with the 0G Compute Network using SDK v0.5.4',
       license: {
         name: 'MIT',
         url: 'https://opensource.org/licenses/MIT',
