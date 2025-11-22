@@ -253,7 +253,7 @@ export const settleFee = async (req: Request, res: Response) => {
  * @swagger
  * /services/acknowledge-provider:
  *   post:
- *     summary: Acknowledge a provider before using their services
+ *     summary: Acknowledge a provider before using their services (Step 1 of 2)
  *     tags: [Services]
  *     requestBody:
  *       required: true
@@ -287,16 +287,89 @@ export const settleFee = async (req: Request, res: Response) => {
 export const acknowledgeProvider = async (req: Request, res: Response) => {
   try {
     const { providerAddress } = req.body;
-    
+
     if (!providerAddress) {
       return res.status(400).json({
         success: false,
         error: 'Provider address is required'
       });
     }
-    
+
     const result = await brokerService.acknowledgeProvider(providerAddress);
-    
+
+    return res.status(200).json({
+      success: true,
+      message: result
+    });
+  } catch (error: any) {
+    return res.status(500).json({
+      success: false,
+      error: error.message
+    });
+  }
+};
+
+/**
+ * @swagger
+ * /services/transfer-to-provider:
+ *   post:
+ *     summary: Transfer funds to a provider (Step 2 of 2 - REQUIRED before queries)
+ *     description: Each provider requires a minimum of 1 OG transferred before you can use their services
+ *     tags: [Services]
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             required:
+ *               - providerAddress
+ *               - amount
+ *             properties:
+ *               providerAddress:
+ *                 type: string
+ *                 description: Provider address to transfer funds to
+ *               amount:
+ *                 type: number
+ *                 description: Amount in OG tokens (minimum 1.0 recommended)
+ *                 minimum: 1.0
+ *     responses:
+ *       200:
+ *         description: Funds transferred successfully
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 success:
+ *                   type: boolean
+ *                 message:
+ *                   type: string
+ *       400:
+ *         description: Invalid request
+ *       500:
+ *         description: Server error
+ */
+export const transferToProvider = async (req: Request, res: Response) => {
+  try {
+    const { providerAddress, amount } = req.body;
+
+    if (!providerAddress) {
+      return res.status(400).json({
+        success: false,
+        error: 'Provider address is required'
+      });
+    }
+
+    if (!amount || isNaN(amount) || amount < 1.0) {
+      return res.status(400).json({
+        success: false,
+        error: 'Valid amount is required (minimum 1.0 OG)'
+      });
+    }
+
+    const result = await brokerService.transferFundsToProvider(providerAddress, Number(amount));
+
     return res.status(200).json({
       success: true,
       message: result

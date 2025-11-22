@@ -105,12 +105,30 @@ class BrokerService {
    */
   async acknowledgeProvider(providerAddress: string): Promise<string> {
     await this.ensureInitialized();
-    
+
     try {
       await this.broker!.inference.acknowledgeProviderSigner(providerAddress);
       return `Provider ${providerAddress} acknowledged successfully`;
     } catch (error: any) {
       throw new Error(`Failed to acknowledge provider: ${error.message}`);
+    }
+  }
+
+  /**
+   * Transfer funds to a specific provider
+   * Required before using a provider's services (minimum 1 OG per provider)
+   * @param providerAddress Provider address to transfer funds to
+   * @param amount Amount in OG tokens (minimum 1.0 recommended)
+   */
+  async transferFundsToProvider(providerAddress: string, amount: number): Promise<string> {
+    await this.ensureInitialized();
+
+    try {
+      const transferAmount = ethers.parseEther(amount.toString());
+      await this.broker!.ledger.transferFund(providerAddress, "inference", transferAmount);
+      return `Successfully transferred ${amount} OG to provider ${providerAddress}`;
+    } catch (error: any) {
+      throw new Error(`Failed to transfer funds to provider: ${error.message}`);
     }
   }
 

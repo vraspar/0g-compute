@@ -106,10 +106,13 @@ npm run demo
 
 This script demonstrates:
 - Wallet and broker initialization
-- Ledger account setup with funding
+- Ledger account setup with funding (1.5 OG minimum)
 - Service discovery and provider acknowledgment
+- **Fund transfer to specific provider** (required 1 OG minimum per provider)
 - AI query submission with payment processing
 - TEE verification and cost tracking
+
+**Note**: When using a new wallet, you must transfer at least 1 OG to each provider before making queries.
 
 See [DEMO_SCRIPT.md](./DEMO_SCRIPT.md) for detailed documentation.
 
@@ -186,12 +189,31 @@ List all available AI services with pricing and verification status.
 ```
 
 #### `POST /api/services/acknowledge-provider`
-Acknowledge a provider before using their services (required once per provider).
+Acknowledge a provider before using their services (Step 1 - required once per provider).
 
 **Request:**
 ```json
 {
   "providerAddress": "0xf07240Efa67755B5311bc75784a061eDB47165Dd"
+}
+```
+
+#### `POST /api/services/transfer-to-provider`
+Transfer funds to a specific provider (Step 2 - REQUIRED before making queries, minimum 1 OG).
+
+**Request:**
+```json
+{
+  "providerAddress": "0xf07240Efa67755B5311bc75784a061eDB47165Dd",
+  "amount": 1.0
+}
+```
+
+**Response:**
+```json
+{
+  "success": true,
+  "message": "Successfully transferred 1.0 OG to provider 0xf07240Efa67755B5311bc75784a061eDB47165Dd"
 }
 ```
 
@@ -269,10 +291,14 @@ On startup, the application automatically:
 4. Starts the Express server
 
 ### Authentication Flow
-1. **Provider Acknowledgment**: Required once per provider
-2. **Header Generation**: Single-use authentication headers per request
-3. **Query Submission**: OpenAI-compatible API calls
-4. **Response Processing**: TEE verification and payment settlement
+1. **Ledger Setup**: Create ledger account with initial balance (minimum 1.5 OG recommended)
+2. **Provider Acknowledgment**: Required once per provider (on-chain transaction)
+3. **Fund Transfer**: Transfer funds to specific provider (minimum 1 OG per provider required)
+4. **Header Generation**: Single-use authentication headers per request
+5. **Query Submission**: OpenAI-compatible API calls
+6. **Response Processing**: TEE verification and payment settlement
+
+**Important**: Each provider requires a minimum of 1 OG transferred to their account before you can use their services. The `transferFund` operation allocates funds from your ledger balance to a specific provider's account.
 
 ## 🔒 Security Best Practices
 
@@ -349,7 +375,14 @@ curl -X POST http://localhost:4000/api/services/acknowledge-provider \
   -d '{"providerAddress": "0xf07240Efa67755B5311bc75784a061eDB47165Dd"}'
 ```
 
-4. **Send a query:**
+4. **Transfer funds to provider (REQUIRED):**
+```bash
+curl -X POST http://localhost:4000/api/services/transfer-to-provider \
+  -H "Content-Type: application/json" \
+  -d '{"providerAddress": "0xf07240Efa67755B5311bc75784a061eDB47165Dd", "amount": 1.0}'
+```
+
+5. **Send a query:**
 ```bash
 curl -X POST http://localhost:4000/api/services/query \
   -H "Content-Type: application/json" \
@@ -372,12 +405,16 @@ const provider = new ethers.JsonRpcProvider('https://evmrpc-testnet.0g.ai');
 const wallet = new ethers.Wallet(process.env.PRIVATE_KEY!, provider);
 const broker = await createZGComputeNetworkBroker(wallet);
 
-// Fund account
-await broker.ledger.addLedger(0.1);
+// Fund account (create ledger with initial balance)
+await broker.ledger.addLedger(1.5); // Minimum 1.5 OG recommended
 
-// Acknowledge provider
+// Acknowledge provider (required once per provider)
 const providerAddress = '0xf07240Efa67755B5311bc75784a061eDB47165Dd';
 await broker.inference.acknowledgeProviderSigner(providerAddress);
+
+// Transfer funds to provider (REQUIRED: minimum 1 OG per provider)
+const transferAmount = ethers.parseEther("1.0");
+await broker.ledger.transferFund(providerAddress, "inference", transferAmount);
 
 // Get service info
 const { endpoint, model } = await broker.inference.getServiceMetadata(providerAddress);

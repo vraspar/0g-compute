@@ -18,7 +18,7 @@ const OFFICIAL_PROVIDERS = {
 // Test configuration
 const TEST_QUERY = "What is the capital of France? Please answer in one sentence.";
 const FALLBACK_FEE = 0.01;
-const INITIAL_FUND_AMOUNT = 0.1; // 0.1 OG tokens
+const INITIAL_FUND_AMOUNT = 1.5; // 1.5 OG tokens (needs at least 1 OG per provider)
 
 async function testComputeFlow() {
   console.log("🚀 Starting 0G Compute Network Flow Demo");
@@ -61,11 +61,25 @@ async function testComputeFlow() {
       ledgerInfo = await broker.ledger.getLedger();
       console.log("✅ Ledger account exists");
       console.log(ledgerInfo);
+
+      // Check if balance is sufficient, if not, add more funds
+      const currentBalance = ledgerInfo[1]; // Available balance
+      const requiredBalance = ethers.parseEther(INITIAL_FUND_AMOUNT.toString());
+
+      if (currentBalance < requiredBalance) {
+        console.log(`⚠️  Insufficient balance (${ethers.formatEther(currentBalance)} OG), adding more funds...`);
+        await broker.ledger.depositFund(INITIAL_FUND_AMOUNT);
+        console.log(`✅ Added ${INITIAL_FUND_AMOUNT} OG tokens to ledger`);
+
+        // Get updated balance
+        ledgerInfo = await broker.ledger.getLedger();
+        console.log(ledgerInfo);
+      }
     } catch (error) {
       console.log("⚠️  Ledger account does not exist, creating...");
-      await broker.ledger.addLedger(0.1);
+      await broker.ledger.addLedger(INITIAL_FUND_AMOUNT);
       console.log(`✅ Ledger created with ${INITIAL_FUND_AMOUNT} OG tokens`);
-      
+
       // Get updated balance
       ledgerInfo = await broker.ledger.getLedger();
       console.log(ledgerInfo);
@@ -117,6 +131,25 @@ async function testComputeFlow() {
       } else {
         throw error;
       }
+    }
+
+    // Step 5.5: Deposit funds to the specific provider
+    console.log("\n📋 Step 5.5: Deposit Funds to Provider");
+    console.log("-".repeat(30));
+
+    console.log("⏳ Transferring funds to provider account...");
+    try {
+      // Transfer at least 1 OG to the provider (required for service usage)
+      const transferAmount = ethers.parseEther("1.0"); // 1 OG in neuron
+      await broker.ledger.transferFund(selectedProvider, "inference", transferAmount);
+      console.log("✅ Transferred 1.0 OG to provider account");
+
+      // Check updated balance
+      const updatedBalance = await broker.ledger.getLedger();
+      console.log("Updated balance:", updatedBalance);
+    } catch (error: any) {
+      console.log(`⚠️  Transfer info: ${error.message}`);
+      // Continue anyway as balance might already be transferred
     }
 
     // Step 6: Get service metadata
